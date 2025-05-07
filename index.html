@@ -1,122 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instagram Story Composer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Story Composer</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
       overflow: hidden;
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
     }
-    #canvas-container {
+    .canvas-container {
       position: relative;
       width: 100vw;
       height: 100vh;
-      background-color: #f0f0f0;
     }
-    #story-frame {
+    .story-frame {
       position: absolute;
       top: 50%;
       left: 50%;
       width: 360px;
       height: 640px;
       transform: translate(-50%, -50%);
-      border: 2px dashed #888;
-      background-color: white;
+      background: white;
+      border: 2px dashed #aaa;
+      z-index: 2;
+    }
+    .upload-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+    }
+    .toolbar {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    .doodle {
+      position: absolute;
+      width: 100px;
+      cursor: move;
       z-index: 1;
     }
     .draggable {
       position: absolute;
-      width: 100px;
       cursor: move;
-    }
-    #upload-btn {
-      position: absolute;
-      top: 10px;
-      left: 10px;
       z-index: 3;
     }
-    #download-btn {
-      position: absolute;
-      top: 10px;
-      left: 150px;
-      z-index: 3;
+    .text-input {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
     }
-    input[type='file'] {
-      display: none;
+    select, input[type="text"] {
+      padding: 5px;
+    }
+    #export-btn {
+      padding: 8px 12px;
+      background-color: #333;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="canvas-container">
-    <div id="story-frame"></div>
-    <button id="upload-btn">Upload Images</button>
-    <button id="download-btn">Download Story</button>
-    <input type="file" id="image-input" multiple accept="image/*">
+  <div class="canvas-container" id="canvas">
+    <div class="story-frame" id="frame"></div>
+
+    <!-- Doodles placed randomly -->
+    <img src="images/doodle1.png" class="doodle" style="top: 50px; left: 80px;">
+    <img src="images/doodle2.png" class="doodle" style="top: 400px; left: 200px;">
+    <img src="images/doodle3.png" class="doodle" style="top: 200px; left: 600px;">
+
+    <div class="toolbar">
+      <div class="text-input">
+        <input type="text" id="textBox" placeholder="Enter your text here">
+        <select id="fontSelector">
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Brush Script MT">Brush Script</option>
+        </select>
+        <button onclick="addText()">Add Text</button>
+      </div>
+    </div>
+
+    <input class="upload-btn" type="file" multiple accept="image/*" onchange="handleFiles(this.files)" />
+    <button id="export-btn" onclick="exportImage()">Download Story</button>
   </div>
 
   <script>
-    const uploadBtn = document.getElementById('upload-btn');
-    const imageInput = document.getElementById('image-input');
-    const container = document.getElementById('canvas-container');
-    const storyFrame = document.getElementById('story-frame');
-
-    uploadBtn.onclick = () => imageInput.click();
-
-    imageInput.addEventListener('change', (event) => {
-      const files = event.target.files;
-      for (let file of files) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'draggable';
-          img.style.top = Math.random() * (window.innerHeight - 120) + 'px';
-          img.style.left = Math.random() * (window.innerWidth - 120) + 'px';
-          container.appendChild(img);
-          makeDraggable(img);
-        }
-        reader.readAsDataURL(file);
-      }
-    });
+    const canvas = document.getElementById('canvas');
+    const frame = document.getElementById('frame');
 
     function makeDraggable(el) {
-      let offsetX, offsetY;
-      el.onmousedown = function(e) {
-        offsetX = e.clientX - el.offsetLeft;
-        offsetY = e.clientY - el.offsetTop;
-        document.onmousemove = function(e) {
-          el.style.left = e.clientX - offsetX + 'px';
-          el.style.top = e.clientY - offsetY + 'px';
+      el.onmousedown = function (e) {
+        e.preventDefault();
+        let shiftX = e.clientX - el.getBoundingClientRect().left;
+        let shiftY = e.clientY - el.getBoundingClientRect().top;
+
+        function moveAt(pageX, pageY) {
+          el.style.left = pageX - shiftX + 'px';
+          el.style.top = pageY - shiftY + 'px';
         }
-        document.onmouseup = function() {
-          document.onmousemove = null;
-          document.onmouseup = null;
+
+        function onMouseMove(e) {
+          moveAt(e.pageX, e.pageY);
         }
-      }
+
+        document.addEventListener('mousemove', onMouseMove);
+
+        el.onmouseup = function () {
+          document.removeEventListener('mousemove', onMouseMove);
+          el.onmouseup = null;
+        };
+      };
+
+      el.ondragstart = () => false;
     }
 
-    document.getElementById('download-btn').addEventListener('click', () => {
-      html2canvas(storyFrame, {
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.src = e.target.result;
+          img.className = 'draggable';
+          img.style.left = '50%';
+          img.style.top = '50%';
+          canvas.appendChild(img);
+          makeDraggable(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function addText() {
+      const textValue = document.getElementById('textBox').value;
+      const font = document.getElementById('fontSelector').value;
+      const textEl = document.createElement('div');
+      textEl.className = 'draggable';
+      textEl.textContent = textValue;
+      textEl.style.fontFamily = font;
+      textEl.style.left = '50%';
+      textEl.style.top = '50%';
+      textEl.style.fontSize = '24px';
+      textEl.style.padding = '5px';
+      canvas.appendChild(textEl);
+      makeDraggable(textEl);
+    }
+
+    function exportImage() {
+      html2canvas(frame, {
         backgroundColor: null,
         useCORS: true,
         allowTaint: true,
         logging: true,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight
+        scale: 2,
+        windowWidth: document.body.scrollWidth,
+        windowHeight: document.body.scrollHeight
       }).then(canvas => {
         const link = document.createElement('a');
-        link.download = 'instagram_story.png';
-        link.href = canvas.toDataURL('image/png');
+        link.download = 'instagram-story.png';
+        link.href = canvas.toDataURL();
         link.click();
       });
-    });
+    }
   </script>
 
-  <!-- Include html2canvas via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
