@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  font-family: Raleway, sans-serif;
+}
+
+.sidebar {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 180px;
+  background: #fff;
+  padding: 15px;
+  box-shadow: 0 0 10px #ccc;
+  z-index: 100;
+}
+
+#canvas-container {
+  width: 360px;
+  height: 640px;
+  background: #f8f8f8;
+  border: 2px dashed #999;
+  margin: 20px auto;
+  position: relative;
+}
+
+#doodle-container img {
+  position: absolute;
+  width: 60px;
+  cursor: pointer;
+}
+
+.uploaded {
+  position: absolute;
+  cursor: move;
+}
+
+#trashCan {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-size: 40px;
+  transition: transform 0.2s ease;
+}
+
+#trashCan.active {
+  transform: scale(1.4);
+}
