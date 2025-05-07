@@ -1,184 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Story Composer</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-    }
-    .canvas-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-    }
-    .story-frame {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 360px;
-      height: 640px;
-      transform: translate(-50%, -50%);
-      background: white;
-      border: 2px dashed #aaa;
-      z-index: 2;
-    }
-    .upload-btn {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-    }
-    .toolbar {
-      position: absolute;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-    }
-    .doodle {
-      position: absolute;
-      width: 100px;
-      cursor: move;
-      z-index: 1;
-    }
-    .draggable {
-      position: absolute;
-      cursor: move;
-      z-index: 3;
-    }
-    .text-input {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      align-items: center;
-    }
-    select, input[type="text"] {
-      padding: 5px;
-    }
-    #export-btn {
-      padding: 8px 12px;
-      background-color: #333;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Instagram Story Designer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Raleway:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="canvas-container" id="canvas">
-    <div class="story-frame" id="frame"></div>
 
-    <!-- Doodles placed randomly -->
-    <img src="images/doodle1.png" class="doodle" style="top: 50px; left: 80px;">
-    <img src="images/doodle2.png" class="doodle" style="top: 400px; left: 200px;">
-    <img src="images/doodle3.png" class="doodle" style="top: 200px; left: 600px;">
-
-    <div class="toolbar">
-      <div class="text-input">
-        <input type="text" id="textBox" placeholder="Enter your text here">
-        <select id="fontSelector">
-          <option value="Arial">Arial</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Brush Script MT">Brush Script</option>
-        </select>
-        <button onclick="addText()">Add Text</button>
-      </div>
-    </div>
-
-    <input class="upload-btn" type="file" multiple accept="image/*" onchange="handleFiles(this.files)" />
-    <button id="export-btn" onclick="exportImage()">Download Story</button>
+  <div class="sidebar">
+    <input type="file" id="imageUpload" accept="image/*"><br><br>
+    <input type="text" id="textInput" placeholder="Enter text"><br>
+    <select id="fontSelect">
+      <option value="Raleway">Raleway</option>
+      <option value="Pacifico">Pacifico</option>
+    </select>
+    <button id="addTextBtn">Add Text</button><br><br>
+    <button id="downloadBtn">Download Story</button>
   </div>
 
-  <script>
-    const canvas = document.getElementById('canvas');
-    const frame = document.getElementById('frame');
+  <div id="canvas-container"></div>
 
-    function makeDraggable(el) {
-      el.onmousedown = function (e) {
-        e.preventDefault();
-        let shiftX = e.clientX - el.getBoundingClientRect().left;
-        let shiftY = e.clientY - el.getBoundingClientRect().top;
+  <div id="doodle-container"></div>
 
-        function moveAt(pageX, pageY) {
-          el.style.left = pageX - shiftX + 'px';
-          el.style.top = pageY - shiftY + 'px';
-        }
+  <div id="trashCan">🗑️</div>
 
-        function onMouseMove(e) {
-          moveAt(e.pageX, e.pageY);
-        }
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-        document.addEventListener('mousemove', onMouseMove);
+  <script src="js/app.js"></script>
 
-        el.onmouseup = function () {
-          document.removeEventListener('mousemove', onMouseMove);
-          el.onmouseup = null;
-        };
-      };
-
-      el.ondragstart = () => false;
-    }
-
-    function handleFiles(files) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const img = new Image();
-          img.src = e.target.result;
-          img.className = 'draggable';
-          img.style.left = '50%';
-          img.style.top = '50%';
-          canvas.appendChild(img);
-          makeDraggable(img);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function addText() {
-      const textValue = document.getElementById('textBox').value;
-      const font = document.getElementById('fontSelector').value;
-      const textEl = document.createElement('div');
-      textEl.className = 'draggable';
-      textEl.textContent = textValue;
-      textEl.style.fontFamily = font;
-      textEl.style.left = '50%';
-      textEl.style.top = '50%';
-      textEl.style.fontSize = '24px';
-      textEl.style.padding = '5px';
-      canvas.appendChild(textEl);
-      makeDraggable(textEl);
-    }
-
-    function exportImage() {
-      html2canvas(frame, {
-        backgroundColor: null,
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        scale: 2,
-        windowWidth: document.body.scrollWidth,
-        windowHeight: document.body.scrollHeight
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'instagram-story.png';
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    }
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
